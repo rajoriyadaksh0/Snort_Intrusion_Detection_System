@@ -1,0 +1,100 @@
+# Rule 1: Website Reconnaissance - HTTP OPTIONS Method Scan
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Website Reconnaissance - HTTP OPTIONS Method Scan"; flow:to_server,established; content:"OPTIONS "; nocase; http_method; sid:100001; rev:1;)
+
+# Rule 2: Website Reconnaissance - SQL Injection Attempt
+alert tcp any any -> any 80 (msg:"SQL Injection Attempt - 'select' keyword detected"; flow:to_server,established; content:"select"; nocase; sid:100002; rev:1;)
+alert tcp any any -> any 80 (msg:"SQL Injection Attempt - 'from' keyword detected"; flow:to_server,established; content:"from"; nocase; sid:100003; rev:1;)
+alert tcp any any -> any 80 (msg:"SQL Injection Attempt - SQL comment detected"; flow:to_server,established; pcre:"/(\-\-)|(\%23)|(#)/"; sid:100004; rev:1;)
+
+# Rule 3: Ping Sweep Detection (ICMP Echo Requests)
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"ICMP Ping Sweep Detected"; itype:8; detection_filter:track by_src, count 10, seconds 10; sid:100005; rev:1;)
+
+# Rule 4: SSH Brute Force Attack Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"SSH Brute Force Attack Detected"; flow:to_server,established; content:"SSH-"; pcre:"/SSH-\d+\.\d+/"; detection_filter:track by_src, count 5, seconds 1; sid:100006; rev:1;)
+
+# Rule 5: Telnet Login Attempt Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 23 (msg:"Telnet Login Attempt Detected"; flow:to_server,established; content:"login"; nocase; sid:100007; rev:1;)
+alert tcp $HOME_NET 21 -> $EXTERNAL_NET any (msg:"Telnet Invalid Login Attempt Detected"; content:"Login failed"; nocase; flow:from_server; sid:100008; rev:1;)
+
+# Rule 6: FTP Anonymous Login Attempt
+alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"FTP Anonymous Login Attempt"; flow:to_server,established; content:"USER anonymous"; nocase; sid:100009; rev:1;)
+
+# Rule 7: FTP Brute Force Attack Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"FTP Brute Force Attack Detected"; flow:to_server,established; content:"USER"; nocase; detection_filter:track by_src, count 5, seconds 60; sid:100010; rev:1;)
+
+# Rule 8: Web Application Failed Login Attempt Detection
+alert tcp any any -> any any (msg:"Web Application Failed Login Attempt Detected"; flow:from_server,established; content:"Username and/or password incorrect"; sid:100011; rev:1;)
+
+# Rule 9: ICMP Time Exceeded Detection (Potential Traceroute)
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"ICMP Time Exceeded Detected - Possible Traceroute"; itype:11; sid:100012; rev:1;)
+
+# Rule 10: Telnet Banner Grabbing Attempt Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 23 (msg:"Telnet Banner Grabbing Attempt Detected"; flow:to_server,established; content:"OpenSSH"; nocase; sid:100013; rev:1;)
+
+# Rule 11: Brute Force HTTP Login Attempts Detection
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Brute Force HTTP Login Attempts Detected"; flow:to_server,established; uricontent:"/login"; content:"username="; content:"password="; detection_filter:track by_src, count 5, seconds 60; sid:100014; rev:1;)
+
+# Rule 12: Local File Inclusion (LFI) Attempt Detection
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Local File Inclusion Attempt Detected"; flow:to_server,established; content:"/etc/passwd"; nocase; sid:100015; rev:1;)
+
+# Rule 13: Remote File Inclusion (RFI) Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"WEB-PHP Remote File Inclusion attempt"; flow:to_server,established; content:"http"; http_uri; pcre:"/\?(php|file|path|document|include|template|config)=http/"; classtype:web-application-attack; sid:100016; rev:1;)
+
+# Rule 14: Remote Code Execution (RCE) Detection
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Remote Code Execution Attempt Detected"; flow:to_server,established; uricontent:"/bin/bash"; nocase; sid:100017; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Remote Code Execution Attempt Detected"; flow:to_server,established; content:"exec"; nocase; sid:100018; rev:1;)
+
+# Rule 15: Cross-Site Scripting (XSS) Detection
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Cross-Site Scripting (XSS) Attack Detected"; flow:to_server,established; content:"%3Cscript"; sid:100019; rev:2;)
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Cross-Site Scripting (XSS) Attack Detected"; flow:to_server,established; content:"<script>"; nocase; sid:100020; rev:1;)
+
+# Rule 16: Server-Side Request Forgery (SSRF) Detection
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Server-Side Request Forgery (SSRF) Attempt Detected"; flow:to_server,established; uricontent:"/"; content:"127.0.0.1"; nocase; sid:100021; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Server-Side Request Forgery (SSRF) Attempt Detected"; flow:to_server,established; uricontent:"/"; content:"localhost"; nocase; sid:100022; rev:1;)
+
+# Rule 17: SQL Injection (SQLI) Detection - Boolean-Based SQLI
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"SQL Injection Attempt Detected - Boolean Based"; flow:to_server,established; uricontent:"?"; pcre:"/(or|and)\s+\d+=\d+/i"; sid:100023; rev:1;)
+
+# Rule 18: SQL Injection (SQLI) Detection - Time-Based SQLI
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"SQL Injection Attempt Detected - Time-Based"; flow:to_server,established; uricontent:"?"; pcre:"/(sleep|wait|delay)/i"; sid:100024; rev:1;)
+
+# Rule 19: Suspicious ICMP Packet Size Detection
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"Suspicious ICMP Packet Size Detected"; itype:8; dsize:>100; sid:100025; rev:1;)
+
+# Rule 20: DNS Queries to Malicious Domains Detection
+alert udp $EXTERNAL_NET any -> $DNS_SERVERS 53 (msg:"DNS Query to Malicious Domain Detected"; content:"malicious.com"; sid:100026; rev:1;)
+
+# Rule 21: Internal IP Address in External Traffic Detection
+alert ip $EXTERNAL_NET any -> $HOME_NET any (msg:"Internal IP Address Detected in External Traffic"; ip_proto:icmp; sid:100027; rev:1;)
+
+# Rule 22: Endpoint Discovery via Web Application
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"Endpoint Discovery - Multiple Connection Attempts from Same IP"; flow:to_server,established; threshold:type both, track by_src, count 20, seconds 1; sid:100028; rev:1;)
+
+# Rule 23: Attempt to Access Sensitive or Backup Files
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Attempt to access sensitive or backup file detected"; flow:to_server,established; uricontent:"/etc/passwd"; nocase; sid:100029; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Attempt to access sensitive or backup file detected"; flow:to_server,established; uricontent:"/config.php"; nocase; sid:100030; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Attempt to access sensitive or backup file detected"; flow:to_server,established; uricontent:".bak"; nocase; sid:100031; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Attempt to access sensitive or backup file detected"; flow:to_server,established; uricontent:".old"; nocase; sid:100032; rev:1;)
+
+# Rule 24: Directory Traversal Attempt Detection
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Directory traversal attempt detected"; flow:to_server,established; uricontent:"../"; nocase; pcre:"/\.\.\/+/U"; sid:100033; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Directory traversal attempt detected"; flow:to_server,established; uricontent:"..%2F"; nocase; sid:100034; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"Directory traversal attempt detected"; flow:to_server,established; uricontent:"..%2e/"; nocase; sid:100035; rev:1;)
+
+# Rule 25: Potential NULL Scan Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (flags:0; msg:"Potential NULL Scan - TCP Packet with No Flags"; threshold:type limit, track by_src, count 5, seconds 60; sid:100036; rev:1;)
+
+# Rule 26: Potential TCP Window Scan Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (flags:SA; window:1024; msg:"Potential TCP Window Scan - Unusual TCP Window Size Detected"; threshold:type limit, track by_src, count 5, seconds 60; sid:100037; rev:1;)
+
+# Rule 27: Potential FIN Scan Detection
+alert tcp any any -> any any (msg:"FIN Scan Detected"; flags:F; threshold:type threshold, track by_src, count 5, seconds 10; sid:100038; rev:1;)
+
+# Rule 28: Potential Xmas Tree Scan Detection
+alert tcp any any -> any any (msg:"Xmas Tree Scan Detected"; flags:FPU; threshold:type threshold, track by_src, count 5, seconds 10; sid:100039; rev:1;)
+
+# Rule 29: SYN Scan Detection
+alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"Possible Nmap SYN scan detected"; flags:S; threshold:type both, track by_src, count 100, seconds 1; sid:100040; rev:1;)
+
+# Rule 30: SYN-ACK Without ACK Detection
+alert tcp any any -> $HOME_NET any (flags:SA; msg:"SYN scan detected: SYN-ACK without ACK"; threshold:type both, track by_src, count 5, seconds 3; sid:100041; rev:1;)
