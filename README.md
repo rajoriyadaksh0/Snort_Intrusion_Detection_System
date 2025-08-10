@@ -195,14 +195,3 @@ To contribute to this project:
 3. Add new rules following the existing SID numbering scheme
 4. Test rules thoroughly
 5. Submit a pull request with detailed descriptions
-
-## License
-
-This project is open source and available under the appropriate license terms.
-
-## Support
-
-For issues and questions:
-- Check Snort documentation at [snort.org](https://www.snort.org)
-- Review rule syntax and configuration options
-- Test rules in a safe environment before production deployment
